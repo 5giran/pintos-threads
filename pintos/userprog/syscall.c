@@ -170,6 +170,23 @@ syscall_handler (struct intr_frame *f)
 			break;
 		}
 
+		
+		case SYS_MMAP:
+			void *addr = (void*) f->R.rdi;
+			size_t length = (size_t) f->R.rsi;
+			int writable = (int) f->R.rdx;
+			int fd = (int) f->R.r10;
+			struct file* file = fd_get (fd);
+			off_t offset = (off_t) f->R.r8;
+
+
+
+			do_mmap (addr, length, writable, file, offset);
+			break;
+		
+		case SYS_MUNMAP:
+			break;
+
 		/* 아직 구현 안 한 syscall은 비정상 종료 */
 		default:
 			thread_exit ();
