@@ -247,28 +247,23 @@ validate_user_buffer (const void *buffer, size_t size, enum user_access access)
 			thread_exit ();
 		}
 
-		// PTE_P == 0 분기 분리 -> 왜 해주는거지???
+		// PTE_P == 0 분기 분리
 		struct page *page;
 		if ((*pte & PTE_P) == 0) {
-			// printf ("[debug] validate_user_buffer: non-present page "
-			// 		"addr=%p pte=%p pte_val=%llx access=%d\n",
-			// 		(const void *) i, (void *) pte,
-			// 		(unsigned long long) *pte, access);
-			// 스레드 구조체 내부에 다 있다...
 			page = spt_find_page (&thread_current ()->spt, i);
-			if (page == NULL && is_valid_stack_growth_request (false, NULL, i, page)) {
+			if (page != NULL) {
+				vm_claim_page (i);
+			}
+			else if (is_valid_stack_growth_request (false, NULL, i, page)) {
 				vm_alloc_page (VM_ANON, i, true);
 				vm_claim_page (i);
-			} else if (page == NULL) {
+			} else {
 				DBG ("validate_user_buffer: no spt entry\n");
 				DBG ("validate_user_buffer: page:%p, pte:%p, *pte:%lld\n", page, pte, *pte);
 
 				thread_exit ();
 			}
 		}
-
-		pte = pml4e_walk (thread_current ()->pml4,
-				(const uint64_t) i, false);
 
 		if (access == USER_ACCESS_WRITE && (*pte & PTE_P) == 1 && (*pte & PTE_W) == 0) {
 			DBG ("[debug] validate_user_buffer: write access denied "
