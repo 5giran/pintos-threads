@@ -70,10 +70,14 @@ lazy_load_file (struct page *page, void *aux)
 	// free (aux);
 
 	void* kpage = page->frame->kva;
-	
-	if (!file_read_at (file, kpage, read_bytes, ofs)) {
+
+	lock_acquire (&filesys_lock);
+	if (read_bytes > 0 && !file_read_at (file, kpage, read_bytes, ofs)) {
+		lock_release (&filesys_lock);
+		DBG ("lazy_load_file: file read at 실패... \n");
 		return false;
 	}
+	lock_release (&filesys_lock);
 	memset (kpage + read_bytes, 0, zero_bytes);
 
 	return true;
