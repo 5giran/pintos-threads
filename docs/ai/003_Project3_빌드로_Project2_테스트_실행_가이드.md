@@ -358,6 +358,110 @@ make p3-stack-growth-regression-results
 cat build/selected-results
 ```
 
+## Project 3 mmap 테스트 실행
+
+Project 3의 mmap 관련 테스트만 확인하려면 `pintos/vm`에서 mmap 편의 타깃을 사용한다. 이 타깃도 `build/` 준비, 하위 디렉터리 생성, `TEST_SUBDIRS="tests/vm tests/threads"`, `FSDISK=10` 전달을 한 번에 처리한다.
+
+전체 mmap 테스트를 실행하고 pass/FAIL 요약까지 확인:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-check
+```
+
+결과 파일만 갱신하고 요약 파일을 출력:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-results
+cat build/selected-results
+```
+
+mmap 테스트 하나만 실행:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-one P3_MMAP_TEST=mmap-read
+```
+
+단일 테스트의 `.result`만 만들고 바로 출력:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-one-result P3_MMAP_TEST=mmap-read
+```
+
+단일 테스트의 `.output`만 만들고 바로 출력:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-one-output P3_MMAP_TEST=mmap-read
+```
+
+테스트 이름은 짧은 이름 또는 전체 경로로 지정할 수 있다.
+
+```bash
+make p3-mmap-one P3_MMAP_TEST=mmap-write
+make p3-mmap-one P3_MMAP_TEST=tests/vm/mmap-write
+```
+
+포함되는 mmap 테스트 목록은 다음과 같다.
+
+```text
+tests/vm/mmap-read
+tests/vm/mmap-close
+tests/vm/mmap-unmap
+tests/vm/mmap-overlap
+tests/vm/mmap-twice
+tests/vm/mmap-write
+tests/vm/mmap-ro
+tests/vm/mmap-exit
+tests/vm/mmap-shuffle
+tests/vm/mmap-bad-fd
+tests/vm/mmap-clean
+tests/vm/mmap-inherit
+tests/vm/mmap-misalign
+tests/vm/mmap-null
+tests/vm/mmap-over-code
+tests/vm/mmap-over-data
+tests/vm/mmap-over-stk
+tests/vm/mmap-remove
+tests/vm/mmap-zero
+tests/vm/mmap-bad-fd2
+tests/vm/mmap-bad-fd3
+tests/vm/mmap-zero-len
+tests/vm/mmap-off
+tests/vm/mmap-bad-off
+tests/vm/mmap-kernel
+```
+
+이미 `.result`가 있어서 다시 실행되지 않으면 해당 테스트 산출물을 지운 뒤 다시 실행한다.
+
+```bash
+rm -f build/tests/vm/mmap-read.output \
+      build/tests/vm/mmap-read.errors \
+      build/tests/vm/mmap-read.result
+
+make p3-mmap-one-result P3_MMAP_TEST=mmap-read
+```
+
+결과 확인:
+
+```bash
+cat build/selected-results
+cat build/tests/vm/mmap-read.result
+cat build/tests/vm/mmap-read.output
+cat build/tests/vm/mmap-read.errors
+```
+
+커널 링크 단계에서 `_start_bss`, `_end_bss`, `start`, `_end_kernel_text`, `_end` 같은 심벌을 찾지 못하거나 relocation overflow가 나면 테스트 실패라기보다 빌드 산출물 또는 링크 스크립트 생성물이 꼬인 상태일 가능성이 높다. 이때는 한 번 깨끗하게 지우고 다시 실행한다.
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make clean
+make p3-mmap-one P3_MMAP_TEST=mmap-read
+```
+
 ## Extra 2, dup2 테스트까지 포함
 
 Project 2 extra 테스트인 `dup2`까지 포함하려면 `TEST_SUBDIRS`에 `tests/userprog/dup2`를 추가하고, user program 컴파일 플래그에 `-DEXTRA2`를 준다.
