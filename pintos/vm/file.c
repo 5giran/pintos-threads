@@ -18,12 +18,19 @@ static const struct page_operations file_ops = {
 	.type = VM_FILE,
 };
 
-/* file vm의 초기화자 */
+/* file vm의 초기화자 
+	파일 기반 페이지(file-backed page) 서브시스템을 초기화합니다. 
+	이 함수에서 파일 기반 페이지와 관련된 모든 것을 설정할 수 있습니다.
+*/
 void
 vm_file_init (void) {
 }
 
-/* file-backed page를 초기화한다 */
+/* file-backed page를 초기화한다 
+	파일 기반 페이지(file-backed page)를 초기화합니다. 
+	이 함수는 먼저 page->operations에서 파일 기반 페이지의 핸들러(handler)를 설정합니다. 
+	메모리를 뒷받침하는 파일 같은 일부 정보를 page 구조체에 업데이트할 수 있습니다.
+*/
 bool
 file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* handler를 설정한다 */
@@ -44,18 +51,24 @@ file_backed_swap_out (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
 }
 
-/* file-backed page를 파괴한다. PAGE는 호출자가 해제한다. */
-static void
-file_backed_destroy (struct page *page) {
-	struct file_page *file_page UNUSED = &page->file;
-}
-
 struct lazy_load_file_aux {
 	struct file *file; // 어느 실행 파일을 읽을지
 	off_t ofs; // 실행 파일의 어느 위치부터(숫자값) 읽을지
 	uint32_t read_bytes; // 이 page file에서 몇바이트 읽을지
 	uint32_t zero_bytes; // 채워지지 않은 만큼 0으로 채워놓음
 };
+
+/* file-backed page를 파괴한다. PAGE는 호출자가 해제한다. 
+	연관된 파일을 닫아 파일 기반 페이지(file-backed page)를 파괴합니다. 
+	내용이 더티(dirty)이면 변경 사항을 파일에 다시 기록해야 합니다. 
+	이 함수에서 page 구조체를 해제할 필요는 없습니다. 
+	file_backed_destroy의 호출자가 이를 처리해야 합니다.
+*/
+static void
+file_backed_destroy (struct page *page) {
+	struct file_page *file_page UNUSED = &page->file;
+}
+
 
 static bool
 lazy_load_file (struct page *page, void *aux)
@@ -158,4 +171,5 @@ do_mmap (void *addr, size_t length, int writable,
 /* munmap을 수행한다 */
 void
 do_munmap (void *addr) {
+
 }
