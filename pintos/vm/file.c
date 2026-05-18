@@ -33,10 +33,13 @@ vm_file_init (void) {
 */
 bool
 file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
+	/* 먼저 가져와라. page_initialize가 값을 덮어쓸 수 있다 */
+	void *aux = page->uninit.aux;
 	/* handler를 설정한다 */
 	page->operations = &file_ops;
 
 	struct file_page *file_page = &page->file;
+	page->file.aux = aux; 
 }
 
 /* 파일에서 내용을 읽어 페이지를 swap in 한다. */
@@ -66,7 +69,8 @@ struct lazy_load_file_aux {
 */
 static void
 file_backed_destroy (struct page *page) {
-	struct file_page *file_page UNUSED = &page->file;
+	struct file_page *file_page = &page->file;
+
 }
 
 
