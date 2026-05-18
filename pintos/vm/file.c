@@ -88,23 +88,23 @@ do_mmap (void *addr, size_t length, int writable,
 	// load_segment 하드 코딩 복사
 	off_t ofs = offset;
 	uint8_t *upage = addr;
-	uint32_t read_bytes;
-	uint32_t zero_bytes;
+	uint32_t read_bytes = 0;
+	uint32_t zero_bytes = 0;
 	// read_bytes, zero_bytes 계산
-	// read_bytes = min (length, filesize)
+	// read_bytes = : 읽어야 하는 총 bytes 수 
 	lock_acquire (&filesys_lock);
-	read_bytes = file_length (file); // TODO. file 을 쓸 때 락을 걸어야 하나요??
+	read_bytes = file_length (file);
 	lock_release (&filesys_lock);
-	
-	if (read_bytes > length) {
+
+	if (read_bytes > length) { // filesize 가 length보다 더 큰 경우
 		read_bytes = length;
 	}
-	zero_bytes = read_bytes % PGSIZE;  // TODO. 이렇게 되면 zero_bytes가 
+	zero_bytes += length - read_bytes;
+	zero_bytes += PGSIZE - (length % PGSIZE);
 	
 	ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
 	ASSERT (pg_ofs(upage) == 0);
 	ASSERT (ofs % PGSIZE == 0);
-
 
 	while (read_bytes > 0 || zero_bytes > 0)
 	{
@@ -123,6 +123,8 @@ do_mmap (void *addr, size_t length, int writable,
 			return NULL;
 		}
 		
+
+
 		aux->file = file;
 		aux->ofs = ofs;
 		aux->read_bytes = page_read_bytes;
