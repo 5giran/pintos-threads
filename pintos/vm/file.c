@@ -124,8 +124,11 @@ do_mmap (void *addr, size_t length, int writable,
 		}
 		
 
-
-		aux->file = file;
+		struct file *new_file = file_reopen (file); // TODO. 각 page 마다 file 구조체를 새롭게 만들지 말고, 첫 번째 page 에만 만드는 식으로 최적화를 할 수 있을 것 같아요...
+		if (new_file == NULL) {
+			free (aux); // TODO. 이런 예외 상황에서 기존에 만들어두었던 다른 메모리 자원들도 회수해야 하지 않나?
+		}
+		aux->file = new_file;
 		aux->ofs = ofs;
 		aux->read_bytes = page_read_bytes;
 		aux->zero_bytes = page_zero_bytes;
