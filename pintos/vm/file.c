@@ -75,9 +75,7 @@ file_backed_destroy (struct page *page) {
 	struct file_page *file_page = &page->file;
 
 	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
-	DBG ("[file_backed_destroy] page : %p\n", page);
-	// DBG ("[file_backed_destroy] frame->kva : %p\n", page->frame->kva);
-	// DBG ("[file_backed_destroy] pte : %p, *pte = %p\n", pte, *pte);
+
 
 	// if (*pte & PTE_P == 1)
 	// 	palloc_free_page ((void*) PTE_ADDR(pte));
@@ -210,10 +208,6 @@ do_munmap (void *addr) {
 	struct lazy_load_file_aux *aux = (struct lazy_load_file_aux *)(page->file.aux);
 	int pg_cnt = aux->pg_cnt;
 
-	DBG ("[do_mnumap] page: 		%p\n", page);
-	DBG ("[do_mnumap] page null?: 	%d\n", page == NULL);
-	DBG ("[do_mnumap] current type: %d\n", page->operations->type);
-	DBG ("[do_mnumap] pg_cnt: 		%d\n", pg_cnt);
 
 	if (pg_cnt == -1) {
 		// TODO. validation part를 바깥으로 빼야 하나?
