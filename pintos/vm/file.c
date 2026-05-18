@@ -4,6 +4,7 @@
 #include "threads/vaddr.h"
 #include "filesys/file.h"
 #include "debug_log.h"
+#include "userprog/syscall.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -91,11 +92,14 @@ do_mmap (void *addr, size_t length, int writable,
 	uint32_t zero_bytes;
 	// read_bytes, zero_bytes 계산
 	// read_bytes = min (length, filesize)
+	lock_acquire (&filesys_lock);
 	read_bytes = file_length (file); // TODO. file 을 쓸 때 락을 걸어야 하나요??
-	if (read_bytes < length) {
+	lock_release (&filesys_lock);
+	
+	if (read_bytes > length) {
 		read_bytes = length;
 	}
-	zero_bytes = read_bytes % PGSIZE;
+	zero_bytes = read_bytes % PGSIZE;  // TODO. 이렇게 되면 zero_bytes가 
 	
 	ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
 	ASSERT (pg_ofs(upage) == 0);
