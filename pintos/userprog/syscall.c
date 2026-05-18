@@ -20,6 +20,7 @@
 #include "intrinsic.h"
 #include "vm/vm.h"
 #include "debug_log.h"
+#include "vm/file.h"
 
 
 void syscall_entry (void);
@@ -35,6 +36,8 @@ static int sys_write (int fd, const void *ubuf, unsigned size);
 static void sys_seek (int fd, unsigned position);
 static unsigned sys_tell (int fd);
 static void sys_close (int fd);
+// [수정] sys_mmap 함수 프로토타입 추가
+static void *sys_mmap (void *addr, size_t length, int writable, int fd, off_t offset);
 
 enum user_access {
 	USER_ACCESS_READ,
@@ -130,11 +133,11 @@ syscall_handler (struct intr_frame *f)
 
 		
 		case SYS_MMAP: {
-			f->R.rax = sys_mmap((void *) f->R.rdi,
-								(size_t) f->R.rsi,
-								(int) f->R.rdx,
-								(int) f->R.r10,
-								(off_t) f->R.r8);
+			f->R.rax = sys_mmap ((void *) f->R.rdi,
+								 (size_t) f->R.rsi,
+								 (int) f->R.rdx,
+								 (int) f->R.r10,
+								 (off_t) f->R.r8);
 			break;
 		}
 
@@ -180,6 +183,10 @@ syscall_handler (struct intr_frame *f)
 			break;
 		}
 
+		case SYS_MUNMAP: {
+			break;
+		}
+
 
 		/* 아직 구현 안 한 syscall은 비정상 종료 */
 		default:
@@ -187,7 +194,8 @@ syscall_handler (struct intr_frame *f)
 			break;
 		
 	}
-	thread_current ()->rsp = NULL;
+	// [수정] thread_current ()->rsp의 타입은 정수인데 NULL이 포인터 상수로 취급돼서 문제. 0으로 바꿔보자.
+	thread_current ()->rsp = 0;
 }
 
 /* Project 2는 pml4에 이미 매핑된 page만 user buffer로 인정한다.
@@ -214,13 +222,16 @@ validate_user_buffer (const void *buffer, size_t size, enum user_access access)
 		
 
 	// 순회할 시작페이지, 끝 페이지 정의
-	const uint8_t *start_page = pg_round_down (bf);
-	const uint8_t *end_page = pg_round_down (end_adr);
+	// [수정] 내부 순회 변수 i와 타입 맞추기
+	void *start_page = pg_round_down (bf);
+	void *end_page = pg_round_down (end_adr);
 
 	/* buffer가 걸쳐진 page를 순회 (페이지 단위로 확인)
 	 * buffer의 시작주소 + PGSIZE: buffer의 끝 주소까지 순회
 	 * i는 buffer가 걸친 각 페이지의 시작 주소를 가리킴 */
-	for (const uint8_t *i = start_page; i <= end_page; i += PGSIZE) {
+
+	 // [수정] spt_find_page()는 두 번째 인자로 void *를 원하므로 i의 타입을 const uint8_t *에서 수정
+	for (void *i = start_page; i <= end_page; i += PGSIZE) {
 		// page 시작주소가 user virtual address 범위 안에 있지 않다면 현재 프로세스 exit(-1)
 		if (!is_user_vaddr (i)) {
 			DBG ("validate_user_buffer: !is_user_vaddr\n");
@@ -555,7 +566,7 @@ sys_close (int fd)
 }
 
 // do_mmap과 반환타입 맞춤
-void *
+static void *
 sys_mmap (void *addr, size_t length, int writable,
 		int fd, off_t offset) {
 			struct file *file = fd_get (fd);
@@ -564,8 +575,10 @@ sys_mmap (void *addr, size_t length, int writable,
 			if (file_length (file) == 0 || pg_ofs (addr) != 0 || addr == 0 || length == 0 || fd == 0 || fd == 1) {
 				return NULL;
 			}
-			for (uint8_t *p = addr; p < addr + length; p += PGSIZE) {
-				if (spt_find_page (thread_current ()->spt, p)) return NULL;
+			// [수정] type통일 위해서 p의 자료형 uint8_t *에서 void *로 변경
+			for (void *p = addr; p < addr + length; p += PGSIZE) {
+				// [수정] spt_find_page의 첫번째 인자는 포인터여야 함 그래서 &붙임
+				if (spt_find_page (&thread_current ()->spt, p)) return NULL;
 			}
 
 			return do_mmap (addr, length, writable, file, offset);
