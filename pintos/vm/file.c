@@ -5,6 +5,8 @@
 #include "filesys/file.h"
 #include "debug_log.h"
 #include "userprog/syscall.h"
+#include "threads/pte.h"
+#include "threads/mmu.h"
 
 static bool file_backed_swap_in (struct page *page, void *kva);
 static bool file_backed_swap_out (struct page *page);
@@ -39,7 +41,7 @@ file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 	page->operations = &file_ops;
 
 	struct file_page *file_page = &page->file;
-	page->file.aux = aux; 
+	file_page->aux = aux; 
 }
 
 /* 파일에서 내용을 읽어 페이지를 swap in 한다. */
@@ -59,6 +61,7 @@ struct lazy_load_file_aux {
 	off_t ofs; // 실행 파일의 어느 위치부터(숫자값) 읽을지
 	uint32_t read_bytes; // 이 page file에서 몇바이트 읽을지
 	uint32_t zero_bytes; // 채워지지 않은 만큼 0으로 채워놓음
+	int pg_cnt; // 몇 페이지나 할당할 것인지 (length에 의해 결정됨)
 };
 
 /* file-backed page를 파괴한다. PAGE는 호출자가 해제한다. 
@@ -71,6 +74,16 @@ static void
 file_backed_destroy (struct page *page) {
 	struct file_page *file_page = &page->file;
 
+	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
+	DBG ("[file_backed_destroy] page : %p\n", page);
+	// DBG ("[file_backed_destroy] frame->kva : %p\n", page->frame->kva);
+	// DBG ("[file_backed_destroy] pte : %p, *pte = %p\n", pte, *pte);
+
+	// if (*pte & PTE_P == 1)
+	// 	palloc_free_page ((void*) PTE_ADDR(pte));
+	pml4_clear_page (thread_current ()->pml4, page->va);
+	page->frame = NULL;
+	
 }
 
 
@@ -87,6 +100,9 @@ lazy_load_file (struct page *page, void *aux)
 	// free (aux);
 
 	void* kpage = page->frame->kva;
+	
+	DBG ("[lazy_load_file] frame->kva : %p\n", page->frame->kva);
+
 
 	lock_acquire (&filesys_lock);
 	if (read_bytes > 0 && !file_read_at (file, kpage, read_bytes, ofs)) {
@@ -117,11 +133,22 @@ do_mmap (void *addr, size_t length, int writable,
 	read_bytes = file_length (file);
 	lock_release (&filesys_lock);
 
+	DBG ("[do_mmap] read_bytes is %d, zero_bytes is %d...\n", read_bytes, zero_bytes);
+
 	if (read_bytes > length) { // filesize 가 length보다 더 큰 경우
 		read_bytes = length;
 	}
 	zero_bytes += length - read_bytes;
-	zero_bytes += PGSIZE - (length % PGSIZE);
+	DBG ("[do_mmap] read_bytes is %d, zero_bytes is %d...\n", read_bytes, zero_bytes);
+
+	if (length % PGSIZE > 0) {
+		zero_bytes += PGSIZE - (length % PGSIZE);
+	}
+	
+	DBG ("[do_mmap] read_bytes is %d, zero_bytes is %d...\n", read_bytes, zero_bytes);
+
+
+	int pg_cnt = (length / PGSIZE) + (length % PGSIZE == 0 ? 0 : 1);
 	
 	ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
 	ASSERT (pg_ofs(upage) == 0);
@@ -129,6 +156,7 @@ do_mmap (void *addr, size_t length, int writable,
 
 	while (read_bytes > 0 || zero_bytes > 0)
 	{
+		DBG ("[do_map] in while... %d, %d\n", read_bytes, zero_bytes);
 		/* 이 페이지를 어떻게 채울지 계산하세요.
 		 * FILE에서 PAGE_READ_BYTES 바이트를 읽고
 		 * 마지막 PAGE_ZERO_BYTES 바이트는 0으로 채웁니다. */
@@ -153,8 +181,10 @@ do_mmap (void *addr, size_t length, int writable,
 		aux->ofs = ofs;
 		aux->read_bytes = page_read_bytes;
 		aux->zero_bytes = page_zero_bytes;
+		aux->pg_cnt = pg_cnt;
 		
 
+		DBG ("make spt entry, %p...\n", upage);
 		if (!vm_alloc_page_with_initializer (VM_FILE, upage,
 											writable, lazy_load_file, aux))
 		{
@@ -168,6 +198,7 @@ do_mmap (void *addr, size_t length, int writable,
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
 		ofs += page_read_bytes;
+		pg_cnt = -1; // 첫 시작 페이지에만 적어놓는다. 다른 페이지에는 적어두지 않는다.
 	}
 	return addr;
 }
@@ -175,5 +206,25 @@ do_mmap (void *addr, size_t length, int writable,
 /* munmap을 수행한다 */
 void
 do_munmap (void *addr) {
+	struct page* page = spt_find_page (&thread_current ()->spt, addr);
+	struct lazy_load_file_aux *aux = (struct lazy_load_file_aux *)(page->file.aux);
+	int pg_cnt = aux->pg_cnt;
+
+	DBG ("[do_mnumap] page: 		%p\n", page);
+	DBG ("[do_mnumap] page null?: 	%d\n", page == NULL);
+	DBG ("[do_mnumap] current type: %d\n", page->operations->type);
+	DBG ("[do_mnumap] pg_cnt: 		%d\n", pg_cnt);
+
+	if (pg_cnt == -1) {
+		// TODO. validation part를 바깥으로 빼야 하나?
+		DBG ("시작 페이지가 아닙니다. 몇 페이지나 할당 해제해야 하는지 알 수 없어요...\n ");
+		return;
+	}
+
+	for (int i = 0; i < pg_cnt; i++, addr += PGSIZE) {
+		page = spt_find_page (&thread_current ()->spt, addr);
+		DBG ("[do_mnumap] call destroy...\n");
+		destroy (page);
+	}
 
 }

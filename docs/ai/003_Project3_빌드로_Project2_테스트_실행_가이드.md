@@ -377,6 +377,22 @@ make p3-mmap-results
 cat build/selected-results
 ```
 
+`p3-mmap-results`는 pass/FAIL 요약을 보는 타깃이다. 각 테스트의 `.result`를 만들기 위해 `.output`도 필요하면 생성되지만, 이미 최신이라고 판단되면 기존 `.output`을 그대로 쓰고 다시 실행하지 않는다.
+
+전체 mmap 테스트의 `.output`, `.result`, `selected-results`를 모두 만들고 싶으면:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-all
+```
+
+전체 mmap 테스트의 `.output` 파일을 직접 만들고 싶으면:
+
+```bash
+cd /workspaces/pintos/pintos/vm
+make p3-mmap-outputs
+```
+
 mmap 테스트 하나만 실행:
 
 ```bash
@@ -442,7 +458,7 @@ rm -f build/tests/vm/mmap-read.output \
       build/tests/vm/mmap-read.errors \
       build/tests/vm/mmap-read.result
 
-make p3-mmap-one-result P3_MMAP_TEST=mmap-read
+make p3-mmap-one-output P3_MMAP_TEST=mmap-read
 ```
 
 결과 확인:

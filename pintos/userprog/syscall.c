@@ -179,12 +179,11 @@ syscall_handler (struct intr_frame *f)
 			struct file* file = fd_get (fd);
 			off_t offset = (off_t) f->R.r8;
 
-
-
-			do_mmap (addr, length, writable, file, offset);
+			f->R.rax = do_mmap (addr, length, writable, file, offset);
 			break;
 		
 		case SYS_MUNMAP:
+			do_munmap ((void*) f->R.rdi);
 			break;
 
 		/* 아직 구현 안 한 syscall은 비정상 종료 */

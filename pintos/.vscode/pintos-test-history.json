@@ -127,5 +127,132 @@
       "last_used": 1777817409.481,
       "last_action": "run"
     }
+  },
+  "vm": {
+    "tests/vm/mmap-read": {
+      "count": 3,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-close": {
+      "count": 3,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-unmap": {
+      "count": 7,
+      "last_used": 1779092256.363,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-overlap": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-twice": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-write": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-ro": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-exit": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-shuffle": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-bad-fd": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-clean": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-inherit": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-misalign": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-null": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-over-code": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-over-data": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-over-stk": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-remove": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-zero": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-bad-fd2": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-bad-fd3": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-zero-len": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-off": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-bad-off": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    },
+    "tests/vm/mmap-kernel": {
+      "count": 1,
+      "last_used": 1779084604.054,
+      "last_action": "run"
+    }
   }
 }
