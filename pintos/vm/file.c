@@ -53,7 +53,6 @@ struct mmap_aux {
 	off_t ofs; // 이 page가 파일의 어느 offset과 연결되는지
 	uint32_t read_bytes; // page fault 때 파일에서 몇 byte 읽을지
 	uint32_t zero_bytes; // 나머지 몇 byte를 0으로 채울지
-	// writable?
 };
 
 static bool
@@ -65,7 +64,7 @@ mmap_load_segment (struct page *page, void *aux) {
 	page->file.read_bytes = a->read_bytes;
 	page->file.zero_bytes = a->zero_bytes;
 
-	void* kpage = page->frame->kva;
+	uint8_t * kpage = page->frame->kva;
 	free(aux);
 
 	if (!read_file_exact_at (page->file.file, kpage, page->file.read_bytes, page->file.ofs)) {
@@ -86,10 +85,10 @@ do_mmap (void *addr, size_t length, int writable,
 
 	void *start_addr = addr; // 성공시 반환할 원본 addr
 	uint8_t *upage = addr; // 반복문 내에서 커서로 쓰일 addr
-	size_t remaining_map = length; // 매핑해야할 남은 byte 수
+	size_t remaining_map = length; // 매핑해야할 남은 byte 수 (사용자가 요청한 크기-이만큼 파일을 읽음)
 	size_t file_len = file_length(file); // 매핑될 파일 길이
 	off_t file_ofs = offset; // page가 연결될 offset
-	size_t remaining_file; // offset부터 파일에서 읽을 byte 수
+	size_t remaining_file; // offset부터 파일 끝까지 실제로 읽을 수 있는 남은 byte 수 (사용자의 요청을 받은 파일 내용 크기)
 
 	if (file_len <= offset) { // remaining_file 길이 할당
 		remaining_file = 0;
@@ -98,13 +97,13 @@ do_mmap (void *addr, size_t length, int writable,
 	}
 
 	// 반복 1번마다 가상 페이지 1개씩 등록됨
+	// remaining_map을 PGSIZE 만큼 끊어서 등록하는 반복문 (제한: remaining_file)
 	while (remaining_map > 0)
 	{
-		// 사용자가 요청한 virtual memory mapping 길이 - length를 이 파일에서 얼마나 담당하는가
+		// 사용자가 요청한 virtual memory mapping 길이
 		// 페이지 길이보다 크면 페이지 크기만큼만 읽어오고 작으면 remaining_map만큼 읽어옴
-		// 요청 내용을 읽어오는거랑 크기 처리 하는건 또 다른 문제임.
 		size_t page_map_bytes = remaining_map < PGSIZE ? remaining_map : PGSIZE;
-		// length를 실제로 얼마나 읽을 것인가. 
+		// 만약 remaining_file의 용량이 더 작다면 그만큼만 읽어야 하기 때문에
 		size_t page_read_bytes = min(page_map_bytes, remaining_file);
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
@@ -128,6 +127,7 @@ do_mmap (void *addr, size_t length, int writable,
 
 		upage += PGSIZE;
 		file_ofs += PGSIZE;
+		// remaining_file이 더 작아서 그만큼 읽었다고 해도 실제로 page_map_bytes만큼 매핑된건 맞음. (부족한 크기는 0)
 		remaining_map -= page_map_bytes;
 		remaining_file -= page_read_bytes;
 	}
