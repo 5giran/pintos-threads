@@ -224,7 +224,7 @@ do_munmap (void *addr) {
 	for (int i = 0; i < pg_cnt; i++, addr += PGSIZE) {
 		page = spt_find_page (&thread_current ()->spt, addr);
 		DBG ("[do_mnumap] call destroy...\n");
-		destroy (page);
+		spt_remove_page (&thread_current ()->spt, page);
 	}
 
 }
