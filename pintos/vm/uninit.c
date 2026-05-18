@@ -45,19 +45,11 @@ uninit_new (struct page *page, void *va, vm_initializer *init,
 /* 첫 page fault에서 페이지를 초기화한다 */
 static bool
 uninit_initialize (struct page *page, void *kva) {
-	DBG ("uninit_initialize: start\n");
 	struct uninit_page *uninit = &page->uninit;
-	DBG ("uninit_initialize: page fault??\n");
 
 	/* 먼저 가져와라. page_initialize가 값을 덮어쓸 수 있다 */
 	vm_initializer *init = uninit->init;
 	void *aux = uninit->aux;
-
-	DBG ("uninit_initialize: variable 가져오기 끝... 그럼 아래 initializer 호출에서 문제가 발생한거에요.\n");
-
-	DBG ("anon page initializer 함수 포인터는... %p\n", anon_initializer);
-	DBG ("anon swap in 함수 포인터는...			 %p\n", anon_initializer);
-	DBG ("vm_initializer(init) 함수 포인터		%p\n", init);
 	
 	/* TODO: 이 함수를 수정해야 할 수도 있다. */
 	return uninit->page_initializer (page, uninit->type, kva) &&
