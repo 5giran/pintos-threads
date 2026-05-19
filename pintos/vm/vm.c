@@ -8,6 +8,12 @@
 #include <string.h>
 #include "debug_log.h"
 
+static struct list frame_table;
+
+void frame_table_init (void) {
+	list_init (&frame_table);
+}
+
 /* page의 va 값을 key로 삼아 hash table bucket 선택용 해시값을 만든다. */
 static uint64_t
 hash_func (const struct hash_elem *e, void* aux) {

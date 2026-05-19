@@ -114,6 +114,7 @@ main (void) {
 
 #ifdef VM
 	vm_init ();
+	frame_table_init ();
 #endif
 
 	printf ("Boot complete.\n");

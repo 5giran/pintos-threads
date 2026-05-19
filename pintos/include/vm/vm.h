@@ -67,7 +67,10 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+	struct list_elem list_elem;
 };
+
+void frame_table_init (void);
 
 /* page 연산을 위한 함수 테이블.
  * 이는 C에서 "interface"를 구현하는 한 가지 방법이다.
