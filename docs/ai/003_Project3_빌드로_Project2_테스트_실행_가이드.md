@@ -459,6 +459,7 @@ rm -f build/tests/vm/mmap-read.output \
       build/tests/vm/mmap-read.result
 
 make p3-mmap-one-output P3_MMAP_TEST=mmap-read
+make p3-mmap-one-result P3_MMAP_TEST=mmap-read
 ```
 
 결과 확인:
