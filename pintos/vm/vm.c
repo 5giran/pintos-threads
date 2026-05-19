@@ -384,7 +384,10 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 void
 vm_hash_destroy_func (struct hash_elem *e, void *aux UNUSED) {
 	struct page * page = hash_entry (e, struct page, hash_elem);
-
+	// if (page->operations->type == VM_FILE && page->file.aux->pg_cnt != -1) {
+	// do_munmap(page->va);
+	// }
+	destroy (page);
 	free (page->frame);
 	free (page);
 }
