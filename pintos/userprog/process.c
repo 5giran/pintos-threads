@@ -24,7 +24,6 @@
 #include "debug_log.h"
 #ifdef VM
 #include "vm/vm.h"
-#include "debug_log.h"
 #endif
 
 #define MAX_ARGS PGSIZE / sizeof(char *) - 1
@@ -539,7 +538,6 @@ process_exec (void *f_name)
 	palloc_free_page (argv_tokens);
 	palloc_free_page (file_name);
 	if (!success) {
-		DBG ("process_exec:load 실패...\n");
 		return -1;
 	}
 		
@@ -731,7 +729,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 						 uint32_t read_bytes, uint32_t zero_bytes,
 						 bool writable);
 
-static bool
+bool
 read_file_exact_at (struct file *file, void *buffer, off_t size, off_t ofs)
 {
 	off_t bytes_read;
@@ -931,19 +929,14 @@ load (const char *file_name, struct intr_frame *if_, int argc, char *argv_tokens
 		}
 	}
 
-	DBG ("load:load_segemt success...\n");
-
 	/* 유저 주소 공간의 맨 위쪽에 스택용 페이지 하나를 만들어준다.
 	 * 내부적으로
 	 * 1. 커널에서 물리 페이지 하나를 할당한다.
 	 * 2. 그 페이지를 유저 가상 주소 USER_STACK - PGSIZE 위치에 매핑한다.
    * 3. if_->rsp를 USER_STACK으로 설정한다. (스택 포인터는 빈 스택의 초기 rsp 값, 스택의 가장 높은 주소 경계를 가리키게 됨)
 	*/
-	if (!setup_stack (if_)) {
-		DBG ("load:setup_stack fail...\n");
+	if (!setup_stack (if_))
 		goto done;
-	}
-		
 
 	/* ELF 엔트리 주소(실행 파일의 시작 주소)를 if_->rip에 저장 (instruction pointer, 즉 CPU가 다음에 실행할 명령어의 주소에 저장하는 것)
 		 프로그램이 처음 실행될 시작 주소를 CPU 상태에 넣어두는 것, do_iret()으로 유저 모드에 들어갈 때, CPU가 ehdr.e_entry 주소부터 실행하게 됨.
@@ -1022,10 +1015,6 @@ done:
 		lock_acquire (&filesys_lock);
 		file_close (file);
 		lock_release (&filesys_lock);
-	}
-
-	if (success != true) {
-		DBG ("load:fail.. might need stack growth...\n");
 	}
 	
 
