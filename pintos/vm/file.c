@@ -73,8 +73,21 @@ struct lazy_load_file_aux {
 static void
 file_backed_destroy (struct page *page) {
 	struct file_page *file_page = &page->file;
-
+	struct lazy_load_file_aux *aux = page->file.aux;
+	struct file* file = aux->file;
+	off_t ofs = aux->ofs;
+	// uint32_t read_bytes = aux->read_bytes;
+	// uint32_t zero_bytes = aux->zero_bytes;
 	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
+
+	if (pml4_is_dirty (thread_current ()->pml4, page->va)) {
+	// if (pte != NULL && (*pte & PTE_D)) {
+		// TODO. write back을 해준다.... 어떻게 해주지???
+		lock_acquire (&filesys_lock);
+
+		file_write_at (file, page->va, PGSIZE, ofs);
+		lock_release (&filesys_lock);
+	}
 
 	if (pte != NULL && ((*pte) & PTE_P != 0))
 		palloc_free_page (ptov(PTE_ADDR (*pte)));
@@ -110,6 +123,7 @@ lazy_load_file (struct page *page, void *aux)
 	lock_release (&filesys_lock);
 	memset (kpage + read_bytes, 0, zero_bytes);
 
+	pml4_set_dirty (thread_current ()->pml4, page->va, 0);
 	return true;
 }
 
