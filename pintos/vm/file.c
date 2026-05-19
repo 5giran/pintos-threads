@@ -76,11 +76,10 @@ file_backed_destroy (struct page *page) {
 
 	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
 
-
-	// if (*pte & PTE_P == 1)
-	// 	palloc_free_page ((void*) PTE_ADDR(pte));
+	if (pte != NULL && ((*pte) & PTE_P != 0))
+		palloc_free_page (ptov(PTE_ADDR (*pte)));
 	pml4_clear_page (thread_current ()->pml4, page->va);
-	page->frame = NULL;
+	page->frame = NULL; // TODO. 메모리 누수
 	
 }
 
