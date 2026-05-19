@@ -310,7 +310,9 @@ vm_do_claim_page (struct page *page) {
 void
 supplemental_page_table_init (struct supplemental_page_table *spt) {
 	struct hash *hash = &spt->table;
+	struct list *list = &spt->mmap_list;
 	hash_init (hash, hash_func, less_func, NULL);
+	list_init (list);
 }
 
 /* supplemental page table을 src에서 dst로 복사한다. */

@@ -85,11 +85,26 @@ struct page_operations {
 #define destroy(page) \
 	if ((page)->operations->destroy) (page)->operations->destroy (page)
 
+
+struct mmap_record {
+    void *addr;
+    uint32_t page_count;
+    struct list_elem elem; // mmap_record 구조체가 만들어지면 이것끼리 연결됨
+	// list는 elem이 원소잖아!!!
+};
+
+
 /* 현재 process의 메모리 공간 표현.
  * 이 struct의 설계를 특정 방식으로 강제하고 싶지는 않다.
  * 설계는 전부 여러분에게 달려 있다. */
+
+ // [추가] mmap list head 정보 여기에 추가
+ // 이 프로세스의 가상 메모리 상태는 thread_current()->spt에 둔다. 로 통일
 struct supplemental_page_table {
 	struct hash table;
+	// [수정] mmap 페이지 하나가 아니라 여러개의 페이지를 저장해야하기 때문에 list가 필요하다.
+	struct list mmap_list;
+	
 };
 
 #include "threads/thread.h"

@@ -94,6 +94,10 @@ do_mmap (void *addr, size_t length, int writable,
 	off_t file_ofs = offset; // page가 연결될 offset
 	size_t remaining_file; // offset부터 파일 끝까지 실제로 읽을 수 있는 남은 byte 수 (사용자의 요청을 받은 파일 내용 크기)
 
+	// [추가] page_count 계산
+	uint32_t page_count = (length % PGSIZE ? (length / PGSIZE) + 1 : (length / PGSIZE));
+
+
 	if (file_len <= offset) { // remaining_file 길이 할당
 		remaining_file = 0;
 	} else {
@@ -141,6 +145,14 @@ do_mmap (void *addr, size_t length, int writable,
 		remaining_map -= page_map_bytes;
 		remaining_file -= page_read_bytes;
 	}
+	
+	// [추가] mmap_record 동적 할당해서 채우기
+	struct mmap_record *record = malloc();
+	record->addr = start_addr;
+	record->page_count = page_count;
+	// 첫번째 매개변수가 list head가 되어야 한다.
+	list_push_back (record, &record->elem);
+
 	return start_addr;
 	
 }

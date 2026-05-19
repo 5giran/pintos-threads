@@ -134,11 +134,9 @@ struct thread {
 	struct file *fd_table[FD_MAX];     	/* 프로세스별 파일 디스크립터 테이블 */
 	int next_fd;                       	/* 다음 할당 후보 fd */
 // #endif
-	uintptr_t rsp;
 #ifdef VM
 	/* thread가 소유한 전체 virtual memory에 대한 테이블. */
 	struct supplemental_page_table spt;
-	
 #endif
 
 	/* thread.c가 소유한다. */
@@ -147,6 +145,7 @@ struct thread {
 	*/
 	struct intr_frame tf;               
 	unsigned magic;                     /* stack overflow를 감지한다. */
+	uintptr_t rsp;						/* 커널모드 rsp값 저장 */
 };
 
 /* false(기본값)면 round-robin scheduler를 사용한다.
