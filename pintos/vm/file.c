@@ -92,8 +92,9 @@ file_backed_destroy (struct page *page) {
 	if (pte != NULL && ((*pte) & PTE_P != 0))
 		palloc_free_page (ptov(PTE_ADDR (*pte)));
 	pml4_clear_page (thread_current ()->pml4, page->va);
-	page->frame = NULL; // TODO. 메모리 누수
 	
+	file_close (file);
+	free (aux);
 }
 
 
@@ -230,7 +231,6 @@ do_munmap (void *addr) {
 
 	for (int i = 0; i < pg_cnt; i++, addr += PGSIZE) {
 		page = spt_find_page (&thread_current ()->spt, addr);
-		DBG ("[do_mnumap] call destroy...\n");
 		spt_remove_page (&thread_current ()->spt, page);
 	}
 
