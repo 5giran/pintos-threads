@@ -121,6 +121,10 @@ page_fault (struct intr_frame *f) {
 		return;
 #endif
 
+	if (user) {
+		thread_exit ();
+	}
+
 	/* page fault를 센다. */
 	page_fault_cnt++;
 

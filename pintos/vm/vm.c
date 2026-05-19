@@ -86,6 +86,8 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 			break;
 		
 		default:
+			DBG ("no valid type...\n");
+			PANIC ("TODO?");
 			break;
 		}
 		struct page *page = malloc (sizeof (struct page));
@@ -104,7 +106,7 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 		return true;
 	}
 err:
-printf ("아마 spt가 제대로 kill 되지 않은 문제일 수 있어요. ...===\n");
+	printf ("아마 spt가 제대로 kill 되지 않은 문제일 수 있어요. ...===\n");
 	return false;
 }
 
@@ -140,8 +142,9 @@ spt_insert_page (struct supplemental_page_table *spt,
 
 void
 spt_remove_page (struct supplemental_page_table *spt, struct page *page) {
+	hash_delete (&spt->table, &page->hash_elem);
 	vm_dealloc_page (page);
-	return true;
+	return;
 }
 
 /* evict될 struct frame을 가져온다. */
@@ -229,6 +232,7 @@ is_valid_stack_growth_request (bool user, struct intr_frame* f, void* addr, stru
 bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
+	DBG ("[vm_try_handle_fault] page fault occurs...\n");
 	if (!not_present) {
 		DBG ("not present, DIE...	\n");
 		return false;
@@ -380,7 +384,10 @@ supplemental_page_table_copy (struct supplemental_page_table *dst,
 void
 vm_hash_destroy_func (struct hash_elem *e, void *aux UNUSED) {
 	struct page * page = hash_entry (e, struct page, hash_elem);
-
+	// if (page->operations->type == VM_FILE && page->file.aux->pg_cnt != -1) {
+	// do_munmap(page->va);
+	// }
+	destroy (page);
 	free (page->frame);
 	free (page);
 }
