@@ -7,6 +7,7 @@
 #include "threads/mmu.h"
 #include <string.h>
 #include "debug_log.h"
+#include "kernel/list.h"
 
 static struct list frame_table;
 
@@ -180,7 +181,23 @@ vm_get_frame (void) {
 	struct frame *frame = malloc (sizeof (struct frame));
 	ASSERT (frame != NULL);
 	frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
-	// TODO. 실패하면 쫒아낼 victim을 골라서 걔를 쫒아낸 뒤, 그 공간을 반환하는 로직을 작성해야 합니다.
+	while (frame->kva == NULL) {
+		// free (frame); // TODO. 이거 안 해주면 메모리 누수야.
+		while (1) {
+			struct list_elem *e = list_pop_front (&frame_table);
+			frame = list_entry (e, struct frame, list_elem);
+			if (frame->page->operations->type == VM_FILE) {
+				break;
+			}
+			list_push_back (&frame_table, e);
+		}
+		ASSERT (frame->page->operations->type == VM_FILE);
+
+		destroy (frame->page);
+
+		frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
+	}
+	list_push_back (&frame_table, &frame->list_elem);
 	ASSERT (frame->kva != NULL);
 	frame->page = NULL;
 	ASSERT (frame->page == NULL);
