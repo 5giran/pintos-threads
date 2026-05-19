@@ -94,7 +94,7 @@ file_backed_destroy (struct page *page) {
 	if (pte != NULL && ((*pte) & PTE_P != 0))
 		palloc_free_page (ptov(PTE_ADDR (*pte)));
 	pml4_clear_page (thread_current ()->pml4, page->va);
-	
+
 	file_close (file);
 	free (aux);
 }
@@ -168,6 +168,11 @@ do_mmap (void *addr, size_t length, int writable,
 	ASSERT (pg_ofs(upage) == 0);
 	ASSERT (ofs % PGSIZE == 0);
 
+	struct file *new_file = file_reopen (file); // TODO. 각 page 마다 file 구조체를 새롭게 만들지 말고, 첫 번째 page 에만 만드는 식으로 최적화를 할 수 있을 것 같아요...
+	if (new_file == NULL) {
+		return NULL;
+	}
+
 	while (read_bytes > 0 || zero_bytes > 0)
 	{
 		DBG ("[do_map] in while... %d, %d\n", read_bytes, zero_bytes);
@@ -187,10 +192,7 @@ do_mmap (void *addr, size_t length, int writable,
 		}
 		
 
-		struct file *new_file = file_reopen (file); // TODO. 각 page 마다 file 구조체를 새롭게 만들지 말고, 첫 번째 page 에만 만드는 식으로 최적화를 할 수 있을 것 같아요...
-		if (new_file == NULL) {
-			free (aux); // TODO. 이런 예외 상황에서 기존에 만들어두었던 다른 메모리 자원들도 회수해야 하지 않나?
-		}
+
 		aux->file = new_file;
 		aux->ofs = ofs;
 		aux->read_bytes = page_read_bytes;
@@ -233,6 +235,9 @@ do_munmap (void *addr) {
 
 	for (int i = 0; i < pg_cnt; i++, addr += PGSIZE) {
 		page = spt_find_page (&thread_current ()->spt, addr);
+		if (page == NULL || page_get_type (page) != VM_FILE) {
+			return NULL;
+		}
 		spt_remove_page (&thread_current ()->spt, page);
 	}
 
