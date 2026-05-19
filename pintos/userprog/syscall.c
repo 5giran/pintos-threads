@@ -172,14 +172,46 @@ syscall_handler (struct intr_frame *f)
 
 		
 		case SYS_MMAP:
+			f->R.rax = NULL;
+
 			void *addr = (void*) f->R.rdi;
 			size_t length = (size_t) f->R.rsi;
 			int writable = (int) f->R.rdx;
 			int fd = (int) f->R.r10;
 			struct file* file = fd_get (fd);
+			if (file == NULL) {
+				goto mmap_err;
+			}
 			off_t offset = (off_t) f->R.r8;
+			off_t file_bytes = file_length (file);
+			
+
+			if (
+				file_bytes == 0 ||
+				pg_ofs (addr) != 0 ||
+				addr == 0 ||
+				length == 0 ||
+				fd == 0 || fd == 1 ||
+				file_bytes < offset ||
+				offset % PGSIZE != 0 ||
+				!is_user_vaddr (addr)
+			) {
+				goto mmap_err;
+			}
+
+
+			for (off_t of = 0; of < length; of += PGSIZE) {
+				if (
+					spt_find_page (&thread_current ()->spt, addr + of) != NULL || 
+					!is_user_vaddr (addr + of)
+				) {
+					goto mmap_err;
+				}
+			}
 
 			f->R.rax = do_mmap (addr, length, writable, file, offset);
+
+		mmap_err:	
 			break;
 		
 		case SYS_MUNMAP:
