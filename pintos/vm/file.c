@@ -78,7 +78,7 @@ file_backed_destroy (struct page *page) {
 	struct lazy_load_file_aux *aux = page->file.aux;
 	struct file* file = aux->file;
 	off_t ofs = aux->ofs;
-	// uint32_t read_bytes = aux->read_bytes;
+	uint32_t read_bytes = aux->read_bytes;
 	// uint32_t zero_bytes = aux->zero_bytes;
 	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
 
@@ -87,7 +87,7 @@ file_backed_destroy (struct page *page) {
 		// TODO. write back을 해준다.... 어떻게 해주지???
 		lock_acquire (&filesys_lock);
 
-		file_write_at (file, page->va, PGSIZE, ofs);
+		file_write_at (file, page->va, read_bytes, ofs);
 		lock_release (&filesys_lock);
 	}
 
