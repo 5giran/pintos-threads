@@ -169,6 +169,10 @@ do_mmap (void *addr, size_t length, int writable,
 	ASSERT (ofs % PGSIZE == 0);
 
 
+	struct file *new_file = file_reopen (file); // TODO. 각 page 마다 file 구조체를 새롭게 만들지 말고, 첫 번째 page 에만 만드는 식으로 최적화를 할 수 있을 것 같아요...
+	if (new_file == NULL) {
+		return NULL;
+	}
 
 	while (read_bytes > 0 || zero_bytes > 0)
 	{
