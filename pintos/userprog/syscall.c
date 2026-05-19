@@ -39,6 +39,7 @@ static void sys_close (int fd);
 // [수정] sys_mmap 함수 프로토타입 추가
 static void *sys_mmap (void *addr, size_t length, int writable, int fd, off_t offset);
 
+
 enum user_access {
 	USER_ACCESS_READ,
 	USER_ACCESS_WRITE,
@@ -131,15 +132,6 @@ syscall_handler (struct intr_frame *f)
 								 (unsigned) f->R.rdx);
 			break;
 
-		
-		case SYS_MMAP: {
-			f->R.rax = sys_mmap ((void *) f->R.rdi,
-								 (size_t) f->R.rsi,
-								 (int) f->R.rdx,
-								 (int) f->R.r10,
-								 (off_t) f->R.r8);
-			break;
-		}
 
 		case SYS_SEEK:
 			sys_seek ((int) f->R.rdi,
@@ -183,7 +175,17 @@ syscall_handler (struct intr_frame *f)
 			break;
 		}
 
+		case SYS_MMAP: {
+			f->R.rax = sys_mmap ((void *) f->R.rdi,
+								 (size_t) f->R.rsi,
+								 (int) f->R.rdx,
+								 (int) f->R.r10,
+								 (off_t) f->R.r8);
+			break;
+		}
+
 		case SYS_MUNMAP: {
+			do_munmap ((void *) f->R.rdi);
 			break;
 		}
 
