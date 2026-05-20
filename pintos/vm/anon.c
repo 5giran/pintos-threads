@@ -46,6 +46,21 @@ anon_initializer (struct page *page, enum vm_type type, void *kva) {
 static bool
 anon_swap_in (struct page *page, void *kva) {
 	struct anon_page *anon_page = &page->anon;
+
+	int swap_slot_index = anon_page->swap_slot_index;
+
+	disk_sector_t start_sector_no = swap_slot_index * 8;
+	void * buffer = kva;
+	for (int i = 0; i < 7; i++) {
+		disk_read (swap_disk, start_sector_no, buffer);
+		start_sector_no += DISK_SECTOR_SIZE;
+		buffer += DISK_SECTOR_SIZE;
+	}
+	bitmap_flip (swap_table, swap_slot_index);
+
+	page->anon.swap_slot_index = -1;
+
+	return true;
 }
 
 /* 내용을 swap disk에 써서 페이지를 swap out 한다. */
