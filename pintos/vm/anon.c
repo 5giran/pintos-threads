@@ -52,6 +52,13 @@ anon_swap_in (struct page *page, void *kva) {
 static bool
 anon_swap_out (struct page *page) {
 	struct anon_page *anon_page = &page->anon;
+	// TODO. if 이미 swap out 되어 있다면 넘어가기
+	lock_acquire (&swap_lock);
+	int bit_index = bitmap_scan_and_flip (swap_table, 0, 1, 0);
+	
+
+	lock_release (&swap_lock);
+
 }
 
 /* anonymous page를 파괴한다. PAGE는 호출자가 해제한다. */
