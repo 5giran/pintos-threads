@@ -2,6 +2,7 @@
 
 #include "vm/vm.h"
 #include "devices/disk.h"
+#include "kernel/bitmap.h"
 
 /* 아래 줄을 수정하지 마십시오 */
 static struct disk *swap_disk;
@@ -17,11 +18,19 @@ static const struct page_operations anon_ops = {
 	.type = VM_ANON,
 };
 
+
+static struct lock swap_lock;               /* 상호 배제. */
+static struct bitmap *swap_table;        /* free swap slot 나타내는 bitmap. */
+
 /* anonymous page용 데이터를 초기화한다 */
 void
 vm_anon_init (void) {
 	/* TODO: swap_disk를 설정한다. */
-	swap_disk = NULL;
+	disk_init ();
+	swap_disk = disk_get (1, 1);
+	lock_init (&swap_lock);
+
+	swap_table = bitmap_create (disk_size (swap_disk) / 8);
 }
 
 /* 파일 매핑을 초기화한다 */
