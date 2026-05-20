@@ -55,7 +55,7 @@ anon_swap_out (struct page *page) {
 	// TODO. if 이미 swap out 되어 있다면 넘어가기
 	lock_acquire (&swap_lock);
 	int bit_index = bitmap_scan_and_flip (swap_table, 0, 1, 0);
-	
+	anon_page->swap_slot_index = bit_index;
 
 	lock_release (&swap_lock);
 
