@@ -3,6 +3,9 @@
 #include "vm/vm.h"
 #include "devices/disk.h"
 #include "kernel/bitmap.h"
+#include "threads/pte.h"
+#include "debug_log.h"
+
 
 /* 아래 줄을 수정하지 마십시오 */
 static struct disk *swap_disk;
@@ -66,13 +69,19 @@ anon_swap_in (struct page *page, void *kva) {
 /* 내용을 swap disk에 써서 페이지를 swap out 한다. */
 static bool
 anon_swap_out (struct page *page) {
+	DBG ("===anon_swap_out pointer ... %p... \n", anon_swap_out);
+
 	struct anon_page *anon_page = &page->anon;
 	// TODO. if 이미 swap out 되어 있다면 넘어가기
 	lock_acquire (&swap_lock);
 	int bit_index = bitmap_scan_and_flip (swap_table, 0, 1, 0);
 	lock_release (&swap_lock);
 
+	DBG ("===anon_swap_out... 1 \n");
+
+
 	anon_page->swap_slot_index = bit_index;
+	DBG ("===anon_swap_out... 2 \n");
 
 	disk_sector_t start_sector_no = bit_index * 8;
 	void * buffer = page->frame->kva;
@@ -81,8 +90,26 @@ anon_swap_out (struct page *page) {
 		start_sector_no += DISK_SECTOR_SIZE;
 		buffer += DISK_SECTOR_SIZE;
 	}
+	DBG ("===anon_swap_out... 3 \n");
+	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
+	DBG ("===anon_swap_out... 4 \n");
+
+	DBG ("===================== \n");
+	DBG ("page :%p\n", page);
+	DBG ("page->va :%p\n", page->va);
+	DBG ("page->type :%d\n", page->operations->type);
+	DBG ("page->frame :%p\n", page->frame);
+	DBG ("page->frame->kva :%p\n", page->frame->kva);
+	DBG ("page->frame->pa :%p\n", page->frame->kva - KERN_BASE);
+	DBG ("pte :%p\n", pte);
+
+	if (pte != NULL && ((*pte) & PTE_P != 0))
+		palloc_free_page (ptov(PTE_ADDR (*pte)));
+	DBG ("===anon_swap_out... 5 \n");
 	pml4_clear_page (thread_current ()->pml4, page->va);
+	DBG ("===anon_swap_out... 55 \n");
 	page->frame = NULL;
+	DBG ("===anon_swap_out... 6 \n");
 	
 	return true;
 }

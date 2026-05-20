@@ -33,6 +33,7 @@
 #include "vm/vm.h"
 #endif
 #ifdef FILESYS
+#include "devices/disk.h"
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
 #endif

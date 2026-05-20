@@ -121,7 +121,7 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt, void *va) {
 	struct page dummy;
-	dummy.va = va;
+	dummy.va = pg_round_down (va);
 	/* TODO: 이 함수를 채워라. */
 	struct hash_elem *he = hash_find (&spt->table, &dummy.hash_elem);
 	if (he == NULL) { 
@@ -181,13 +181,33 @@ vm_get_frame (void) {
 	struct frame *frame = malloc (sizeof (struct frame));
 	ASSERT (frame != NULL);
 	frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
-	if (frame->kva == NULL) {
-		free (frame); // TODO. 이거 안 해주면 메모리 누수야.
+	while (frame->kva == NULL) {
+		DBG ("===vm_get_frame:no frame left... eviction...\n");
+
+		// for (
+		// 	struct list_elem *e = list_begin (&frame_table);
+		// 	e != list_end (&frame_table);
+		// 	e = list_next (e)
+		// ) {
+		// 	struct frame *temp_frame = list_entry (e, struct frame, list_elem);
+		// 	DBG ("===page_type:%d, page_va:%p, page:%p, frame:%p\n", temp_frame->page->operations->type, temp_frame->page->va, temp_frame->page, temp_frame);
+		// }
+
+		// free (frame); // TODO. 이거 안 해주면 메모리 누수야.
+		if (list_empty (&frame_table)) {
+			PANIC ("리스트가 비어있는데 왜 프레임도 없다고 하는거죠??? 아무튼 이상한 일이네요...");
+		}
 		struct list_elem *e = list_pop_front (&frame_table);
 		frame = list_entry (e, struct frame, list_elem);
+		DBG ("===vm_get_frame:페이지의 가상 주소... 	%p... \n", frame->page->va);
+		DBG ("===vm_get_frame:page... 				%p... \n", frame->page);
+		DBG ("===vm_get_frame:page->operations...	%p... \n", frame->page->operations);
 
 		swap_out (frame->page);
+		frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
+		DBG ("===vm_get_frame:eviction... 4 \n");
 	}
+	DBG ("===vm_get_frame:eviction done... \n");
 	list_push_back (&frame_table, &frame->list_elem);
 	ASSERT (frame->kva != NULL);
 	frame->page = NULL;
@@ -219,10 +239,10 @@ is_valid_stack_growth_request (bool user, struct intr_frame* f, void* addr, stru
 		rsp = f->rsp;
 	} else {
 		rsp = thread_current ()->rsp;
-		if (rsp == NULL) {
-			DBG ("kernel page fault 발생, 정당하지 않은 메모리 접근 시도를 차단합니다.\n");
-			return false;
-		}
+		// if (rsp == NULL) {
+		// 	DBG ("kernel page fault 발생, 정당하지 않은 메모리 접근 시도를 차단합니다.\n");
+		// 	return false;
+		// }
 	}
 
 	if (!is_user_vaddr (addr)) {
@@ -238,7 +258,6 @@ is_valid_stack_growth_request (bool user, struct intr_frame* f, void* addr, stru
 		return true;
 	}
 
-	DBG ("is_valid_stack_growth_request: false\n");
 	return false;
 }
 
@@ -246,7 +265,6 @@ is_valid_stack_growth_request (bool user, struct intr_frame* f, void* addr, stru
 bool
 vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 		bool user UNUSED, bool write UNUSED, bool not_present UNUSED) {
-	DBG ("[vm_try_handle_fault] page fault occurs...\n");
 	if (!not_present) {
 		DBG ("not present, DIE...	\n");
 		return false;
@@ -269,9 +287,12 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	따라서 실제 페이지가 만들어졌는지를 한 번 더 체크해줘야 한다.
 	하지만 이 예외 체크도 완벽히 모든 예외를 체크한다고 할 수는 없다... (page는 생성되었는데 물리 프레임과 매핑이 실패했다면??)
 	*/
+	DBG ("vm_try_handle_fault===page addr: %p, addr: %p\n", page_addr, addr);
+
 	page = spt_find_page (spt, page_addr);
 	if (page == NULL) {  
 		DBG ("정당하지 않은 page fault 이에요.\n");
+		DBG ("page addr: %p, addr: %p\n", page_addr, addr);
 		return false;
 	}
 	return vm_do_claim_page (page);

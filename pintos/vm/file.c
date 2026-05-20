@@ -77,8 +77,8 @@ file_backed_swap_out (struct page *page) {
 		file_write_at (file, page->va, read_bytes, ofs);
 		lock_release (&filesys_lock);
 	}
-	// if (pte != NULL && ((*pte) & PTE_P != 0))
-	// 	palloc_free_page (ptov(PTE_ADDR (*pte)));
+	if (pte != NULL && ((*pte) & PTE_P != 0))
+		palloc_free_page (ptov(PTE_ADDR (*pte)));
 	pml4_clear_page (thread_current ()->pml4, page->va);
 
 	// file_close (file);

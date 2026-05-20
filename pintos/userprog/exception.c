@@ -5,6 +5,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "intrinsic.h"
+#include "debug_log.h"
 
 /* 처리한 page fault 수. */
 static long long page_fault_cnt;
@@ -122,6 +123,7 @@ page_fault (struct intr_frame *f) {
 #endif
 
 	if (user) {
+		DBG ("페이지 폴트: user 문제");
 		thread_exit ();
 	}
 

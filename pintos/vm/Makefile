@@ -49,6 +49,15 @@ P3_MMAP_OUTPUTS = $(addsuffix .output,$(P3_MMAP_TESTS))
 P3_MMAP_RESULTS = $(addsuffix .result,$(P3_MMAP_TESTS))
 P3_MMAP_TEST ?= mmap-read
 P3_MMAP_TEST_PATH = $(if $(findstring /,$(P3_MMAP_TEST)),$(P3_MMAP_TEST),tests/vm/$(P3_MMAP_TEST))
+P3_SWAP_TESTS = tests/vm/swap-file
+P3_SWAP_TESTS += tests/vm/swap-anon
+P3_SWAP_TESTS += tests/vm/swap-iter
+P3_SWAP_TESTS += tests/vm/swap-fork
+P3_SWAP_TEST ?= swap-anon
+P3_SWAP_TEST_PATH = $(if $(findstring /,$(P3_SWAP_TEST)),$(P3_SWAP_TEST),tests/vm/$(P3_SWAP_TEST))
+P3_SWAP_TEST_NAME = $(notdir $(P3_SWAP_TEST_PATH))
+P3_SWAP_DISK ?= $(if $(filter swap-anon,$(P3_SWAP_TEST_NAME)),30,$(if $(filter swap-iter,$(P3_SWAP_TEST_NAME)),50,$(if $(filter swap-fork,$(P3_SWAP_TEST_NAME)),200,10)))
+P3_SWAP_MEMORY ?= $(if $(filter swap-file,$(P3_SWAP_TEST_NAME)),8,$(if $(filter swap-fork,$(P3_SWAP_TEST_NAME)),40,10))
 P2_FORK_DEPENDENT_TESTS = tests/userprog/fork-once
 P2_FORK_DEPENDENT_TESTS += tests/userprog/fork-multiple
 P2_FORK_DEPENDENT_TESTS += tests/userprog/fork-recursive
@@ -74,7 +83,7 @@ P3_VM_DIRS = $(sort $(addprefix build/,$(KERNEL_SUBDIRS) $(P3_VM_TEST_SUBDIRS) l
 
 .PHONY: p2-prepare-dirs p2-nofork-check p2-nofork-results p2-user-nofork-check p2-user-nofork-results p2-exec-basic-check p2-exec-basic-results p2-fork-check p2-fork-results p2-fork-one p2-fork-one-result p2-fork-one-output
 .PHONY: p2-prepare-dirs p3-vm-prepare-dirs p2-nofork-check p2-nofork-results p2-user-nofork-check p2-user-nofork-results p2-exec-basic-check p2-exec-basic-results p2-pointer-check p2-pointer-results p2-fork-check p2-fork-results p2-fork-one p2-fork-one-result p2-fork-one-output p3-pt-check p3-pt-results p3-stack-growth-check p3-stack-growth-results p3-stack-growth-regression-results p3-stack-one p3-stack-one-result p3-stack-one-output p3-mmap-check p3-mmap-results p3-mmap-outputs p3-mmap-all p3-mmap-one p3-mmap-one-result p3-mmap-one-output
-.PHONY: p2-prepare-dirs p3-vm-prepare-dirs p2-nofork-check p2-nofork-results p2-user-nofork-check p2-user-nofork-results p2-exec-basic-check p2-exec-basic-results p2-pointer-check p2-pointer-results p2-fork-check p2-fork-results p2-fork-one p2-fork-one-result p2-fork-one-output p3-pt-check p3-pt-results p3-stack-growth-check p3-stack-growth-results p3-stack-growth-regression-results p3-stack-one p3-stack-one-result p3-stack-one-output p3-mmap-check p3-mmap-results p3-mmap-one p3-mmap-one-result p3-mmap-one-output
+.PHONY: p2-prepare-dirs p3-vm-prepare-dirs p2-nofork-check p2-nofork-results p2-user-nofork-check p2-user-nofork-results p2-exec-basic-check p2-exec-basic-results p2-pointer-check p2-pointer-results p2-fork-check p2-fork-results p2-fork-one p2-fork-one-result p2-fork-one-output p3-pt-check p3-pt-results p3-stack-growth-check p3-stack-growth-results p3-stack-growth-regression-results p3-stack-one p3-stack-one-result p3-stack-one-output p3-mmap-check p3-mmap-results p3-mmap-one p3-mmap-one-result p3-mmap-one-output p3-swap-check p3-swap-results p3-swap-one p3-swap-one-result p3-swap-one-output
 
 p2-prepare-dirs: build/Makefile
 	mkdir -p $(P2_DIRS)
@@ -167,3 +176,21 @@ p3-mmap-one-result: p3-vm-prepare-dirs
 p3-mmap-one-output: p3-vm-prepare-dirs
 	cd build && $(MAKE) $(P3_MMAP_TEST_PATH).output TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" FSDISK=10
 	@cat build/$(P3_MMAP_TEST_PATH).output
+
+p3-swap-check: p3-vm-prepare-dirs
+	cd build && $(MAKE) selected-check TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" INCLUDE_TESTS="$(P3_SWAP_TESTS)" FSDISK=10
+
+p3-swap-results: p3-vm-prepare-dirs
+	cd build && $(MAKE) selected-results TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" INCLUDE_TESTS="$(P3_SWAP_TESTS)" FSDISK=10
+	@cat build/selected-results
+
+p3-swap-one: p3-vm-prepare-dirs
+	cd build && $(MAKE) selected-check TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" INCLUDE_TESTS="$(P3_SWAP_TEST_PATH)" FSDISK=10 SWAP_DISK=$(P3_SWAP_DISK) MEMORY=$(P3_SWAP_MEMORY)
+
+p3-swap-one-result: p3-vm-prepare-dirs
+	cd build && $(MAKE) $(P3_SWAP_TEST_PATH).result TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" FSDISK=10 SWAP_DISK=$(P3_SWAP_DISK) MEMORY=$(P3_SWAP_MEMORY)
+	@cat build/$(P3_SWAP_TEST_PATH).result
+
+p3-swap-one-output: p3-vm-prepare-dirs
+	cd build && $(MAKE) $(P3_SWAP_TEST_PATH).output TEST_SUBDIRS="$(P3_VM_TEST_SUBDIRS)" FSDISK=10 SWAP_DISK=$(P3_SWAP_DISK) MEMORY=$(P3_SWAP_MEMORY)
+	@cat build/$(P3_SWAP_TEST_PATH).output
