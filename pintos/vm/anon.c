@@ -55,6 +55,8 @@ anon_swap_out (struct page *page) {
 	// TODO. if 이미 swap out 되어 있다면 넘어가기
 	lock_acquire (&swap_lock);
 	int bit_index = bitmap_scan_and_flip (swap_table, 0, 1, 0);
+	lock_release (&swap_lock);
+
 	anon_page->swap_slot_index = bit_index;
 
 	disk_sector_t start_sector_no = bit_index * 8;
@@ -64,7 +66,6 @@ anon_swap_out (struct page *page) {
 		start_sector_no += DISK_SECTOR_SIZE;
 		buffer += DISK_SECTOR_SIZE;
 	}
-	lock_release (&swap_lock);
 	pml4_clear_page (thread_current ()->pml4, page->va);
 	page->frame = NULL;
 	
