@@ -54,7 +54,7 @@ anon_swap_in (struct page *page, void *kva) {
 	void * buffer = kva;
 	for (int i = 0; i <= 7; i++) {
 		disk_read (swap_disk, start_sector_no, buffer);
-		start_sector_no += DISK_SECTOR_SIZE;
+		start_sector_no += 1;
 		buffer += DISK_SECTOR_SIZE;
 	}
 	bitmap_flip (swap_table, swap_slot_index);
@@ -79,7 +79,8 @@ anon_swap_out (struct page *page) {
 	void * buffer = page->frame->kva;
 	for (int i = 0; i <= 7; i++) {
 		disk_write (swap_disk, start_sector_no, buffer);
-		start_sector_no += DISK_SECTOR_SIZE;
+
+		start_sector_no += 1;
 		buffer += DISK_SECTOR_SIZE;
 	}
 	pml4_clear_page (thread_current ()->pml4, page->va);
