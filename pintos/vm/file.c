@@ -80,6 +80,7 @@ file_backed_swap_out (struct page *page) {
 	// if (pte != NULL && ((*pte) & PTE_P != 0))
 	// 	palloc_free_page (ptov(PTE_ADDR (*pte)));
 	pml4_clear_page (thread_current ()->pml4, page->va);
+	page->frame = NULL;
 
 	// file_close (file);
 	// free (aux);
