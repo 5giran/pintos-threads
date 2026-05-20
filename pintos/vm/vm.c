@@ -181,7 +181,7 @@ vm_get_frame (void) {
 	struct frame *frame = malloc (sizeof (struct frame));
 	ASSERT (frame != NULL);
 	frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
-	while (frame->kva == NULL) {
+	if (frame->kva == NULL) {
 		// free (frame); // TODO. 이거 안 해주면 메모리 누수야.
 		while (1) {
 			struct list_elem *e = list_pop_front (&frame_table);
@@ -194,10 +194,6 @@ vm_get_frame (void) {
 		ASSERT (frame->page->operations->type == VM_FILE);
 
 		swap_out (frame->page);
-		// destroy (frame->page);
-
-		// frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
-		break;
 	}
 	list_push_back (&frame_table, &frame->list_elem);
 	ASSERT (frame->kva != NULL);
