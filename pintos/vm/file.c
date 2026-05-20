@@ -20,6 +20,14 @@ static const struct page_operations file_ops = {
 	.type = VM_FILE,
 };
 
+struct lazy_load_file_aux {
+	struct file *file; // 어느 실행 파일을 읽을지
+	off_t ofs; // 실행 파일의 어느 위치부터(숫자값) 읽을지
+	uint32_t read_bytes; // 이 page file에서 몇바이트 읽을지
+	uint32_t zero_bytes; // 채워지지 않은 만큼 0으로 채워놓음
+	int pg_cnt; // 몇 페이지나 할당할 것인지 (length에 의해 결정됨)
+};
+
 /* file vm의 초기화자 
 	파일 기반 페이지(file-backed page) 서브시스템을 초기화합니다. 
 	이 함수에서 파일 기반 페이지와 관련된 모든 것을 설정할 수 있습니다.
@@ -55,16 +63,27 @@ file_backed_swap_in (struct page *page, void *kva) {
 /* 내용을 파일로 writeback하여 페이지를 swap out 한다. */
 static bool
 file_backed_swap_out (struct page *page) {
-	struct file_page *file_page UNUSED = &page->file;
-}
+	struct file_page *file_page = &page->file;
+	struct lazy_load_file_aux *aux = page->file.aux;
+	struct file* file = aux->file;
+	off_t ofs = aux->ofs;
+	uint32_t read_bytes = aux->read_bytes;
+	// uint32_t zero_bytes = aux->zero_bytes;
+	uint64_t *pte = pml4e_walk (thread_current()->pml4, page->va, 0);
 
-struct lazy_load_file_aux {
-	struct file *file; // 어느 실행 파일을 읽을지
-	off_t ofs; // 실행 파일의 어느 위치부터(숫자값) 읽을지
-	uint32_t read_bytes; // 이 page file에서 몇바이트 읽을지
-	uint32_t zero_bytes; // 채워지지 않은 만큼 0으로 채워놓음
-	int pg_cnt; // 몇 페이지나 할당할 것인지 (length에 의해 결정됨)
-};
+	if (pml4_is_dirty (thread_current ()->pml4, page->va)) {
+		lock_acquire (&filesys_lock);
+
+		file_write_at (file, page->va, read_bytes, ofs);
+		lock_release (&filesys_lock);
+	}
+	// if (pte != NULL && ((*pte) & PTE_P != 0))
+	// 	palloc_free_page (ptov(PTE_ADDR (*pte)));
+	pml4_clear_page (thread_current ()->pml4, page->va);
+
+	// file_close (file);
+	// free (aux);
+}
 
 /* file-backed page를 파괴한다. PAGE는 호출자가 해제한다. 
 	연관된 파일을 닫아 파일 기반 페이지(file-backed page)를 파괴합니다. 

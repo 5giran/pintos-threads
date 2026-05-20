@@ -193,9 +193,11 @@ vm_get_frame (void) {
 		}
 		ASSERT (frame->page->operations->type == VM_FILE);
 
-		destroy (frame->page);
+		swap_out (frame->page);
+		// destroy (frame->page);
 
-		frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
+		// frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
+		break;
 	}
 	list_push_back (&frame_table, &frame->list_elem);
 	ASSERT (frame->kva != NULL);
