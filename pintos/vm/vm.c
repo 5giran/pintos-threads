@@ -182,16 +182,9 @@ vm_get_frame (void) {
 	ASSERT (frame != NULL);
 	frame->kva = palloc_get_page (PAL_USER | PAL_ZERO);
 	if (frame->kva == NULL) {
-		// free (frame); // TODO. 이거 안 해주면 메모리 누수야.
-		while (1) {
-			struct list_elem *e = list_pop_front (&frame_table);
-			frame = list_entry (e, struct frame, list_elem);
-			if (frame->page->operations->type == VM_FILE) {
-				break;
-			}
-			list_push_back (&frame_table, e);
-		}
-		ASSERT (frame->page->operations->type == VM_FILE);
+		free (frame); // TODO. 이거 안 해주면 메모리 누수야.
+		struct list_elem *e = list_pop_front (&frame_table);
+		frame = list_entry (e, struct frame, list_elem);
 
 		swap_out (frame->page);
 	}
