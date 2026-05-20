@@ -51,7 +51,7 @@ anon_swap_in (struct page *page, void *kva) {
 
 	disk_sector_t start_sector_no = swap_slot_index * 8;
 	void * buffer = kva;
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i <= 7; i++) {
 		disk_read (swap_disk, start_sector_no, buffer);
 		start_sector_no += DISK_SECTOR_SIZE;
 		buffer += DISK_SECTOR_SIZE;
@@ -76,7 +76,7 @@ anon_swap_out (struct page *page) {
 
 	disk_sector_t start_sector_no = bit_index * 8;
 	void * buffer = page->frame->kva;
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i <= 7; i++) {
 		disk_write (swap_disk, start_sector_no, buffer);
 		start_sector_no += DISK_SECTOR_SIZE;
 		buffer += DISK_SECTOR_SIZE;
