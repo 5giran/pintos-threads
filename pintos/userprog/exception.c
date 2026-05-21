@@ -122,7 +122,7 @@ page_fault (struct intr_frame *f) {
 #endif
 
 	if (user) {
-		printf ("page fault: user die...\n");
+		// printf ("page fault: user die...\n");
 		thread_exit ();
 	}
 
