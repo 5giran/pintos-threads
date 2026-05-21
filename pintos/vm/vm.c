@@ -249,7 +249,6 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	DBG ("[vm_try_handle_fault] page fault occurs...\n");
 	if (!not_present) {
 		DBG ("not present, DIE...	\n");
-		printf ("===addr:%p\n", addr);
 		return false;
 	}
 	if (addr == NULL) {
