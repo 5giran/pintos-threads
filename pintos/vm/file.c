@@ -57,7 +57,35 @@ file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 /* 파일에서 내용을 읽어 페이지를 swap in 한다. */
 static bool
 file_backed_swap_in (struct page *page, void *kva) {
-	struct file_page *file_page UNUSED = &page->file;
+	struct file_page *file_page = &page->file;
+
+	struct lazy_load_file_aux *aux = file_page->aux;
+
+	if (aux == NULL) {
+		return false;
+	}
+	struct file *file = ((struct lazy_load_file_aux *) aux)->file;
+	off_t ofs = ((struct lazy_load_file_aux *) aux)->ofs;
+	uint32_t read_bytes = ((struct lazy_load_file_aux *) aux)->read_bytes;
+	uint32_t zero_bytes = ((struct lazy_load_file_aux *) aux)->zero_bytes;
+	// free (aux);
+
+	void* kpage = page->frame->kva;
+	
+	DBG ("[lazy_load_file] frame->kva : %p\n", page->frame->kva);
+
+
+	lock_acquire (&filesys_lock);
+	if (read_bytes > 0 && !file_read_at (file, kpage, read_bytes, ofs)) {
+		lock_release (&filesys_lock);
+		DBG ("lazy_load_file: file read at 실패... \n");
+		return false;
+	}
+	lock_release (&filesys_lock);
+	memset (kpage + read_bytes, 0, zero_bytes);
+
+	pml4_set_dirty (thread_current ()->pml4, page->va, 0);
+	return true;
 }
 
 /* 내용을 파일로 writeback하여 페이지를 swap out 한다. */
